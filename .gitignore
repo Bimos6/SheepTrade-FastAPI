@@ -1,0 +1,33 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+
+# === Виртуальное окружение ===
+.venv/
+venv/
+env/
+ENV/
+
+# === Секреты (НЕ КОММИТИМ!) ===
+.env
+.env.local
+*.env.production
+
+# === IDE / OS ===
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# === Docker ===
+postgres_data/
+redis_data/
+
+# === Логи ===
+*.log
+logs/

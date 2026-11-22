@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SheepTrade | Next Gen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        dark: '#0a0e0c',
+                        panel: 'rgba(20, 28, 22, 0.7)',
+                        element: 'rgba(42, 54, 41, 0.6)',
+                        primary: '#4ade80',
+                        accent: '#facc15',
+                        danger: '#ef4444',
+                        textMain: '#f8fafc',
+                        textMuted: '#94a3b8'
+                    },
+                    boxShadow: {
+                        'glow-green': '0 0 20px rgba(74, 222, 128, 0.4)',
+                        'glow-yellow': '0 0 20px rgba(250, 204, 21, 0.4)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #0a0e0c; 
+            background-image: radial-gradient(circle at 50% 0%, #17231a 0%, #0a0e0c 70%);
+            color: #f8fafc; 
+            overflow: hidden; 
+        }
+        
+        /* Убираем стандартные стрелочки у input type="number" */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .glass-panel {
+            background: rgba(20, 28, 22, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .rarity-common { color: #9ca3af; text-shadow: 0 0 10px rgba(156, 163, 175, 0.3); }
+        .rarity-uncommon { color: #22c55e; text-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+        .rarity-rare { color: #3b82f6; text-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
+        .rarity-epic { color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.4); }
+        .rarity-legendary { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+        .rarity-mythical { color: #06b6d4; text-shadow: 0 0 10px rgba(6, 182, 212, 0.4); }
+        .rarity-ancient { color: #b91c1c; text-shadow: 0 0 10px rgba(185, 28, 28, 0.4); }
+        .rarity-cosmic { color: #d946ef; text-shadow: 0 0 10px rgba(217, 70, 239, 0.4); }
+        .rarity-divine { color: #bae6fd; text-shadow: 0 0 10px rgba(186, 230, 253, 0.4); }
+        .rarity-seasonal { color: #1d4ed8; text-shadow: 0 0 10px rgba(29, 78, 216, 0.4); }
+
+        .border-glow-common { border-color: #9ca3af; box-shadow: 0 0 15px rgba(156, 163, 175, 0.2); }
+        .border-glow-uncommon { border-color: #22c55e; box-shadow: 0 0 15px rgba(34, 197, 94, 0.3); }
+        .border-glow-rare { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+        .border-glow-epic { border-color: #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
+        .border-glow-legendary { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        .border-glow-mythical { border-color: #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.3); }
+        .border-glow-ancient { border-color: #b91c1c; box-shadow: 0 0 15px rgba(185, 28, 28, 0.3); }
+        .border-glow-cosmic { border-color: #d946ef; box-shadow: 0 0 15px rgba(217, 70, 239, 0.3); }
+        .border-glow-divine { border-color: #bae6fd; box-shadow: 0 0 15px rgba(186, 230, 253, 0.3); }
+        .border-glow-seasonal { border-color: #1d4ed8; box-shadow: 0 0 15px rgba(29, 78, 216, 0.3); }
+
+        @keyframes walkBob {
+            0%, 100% { transform: translateY(0) scaleX(var(--dir)); }
+            50% { transform: translateY(-3px) scaleX(var(--dir)); }
+        }
+        
+        .sheep-sprite {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            transition: --dir 0.1s;
+            will-change: left, top;
+        }
+
+        .sheep-walking {
+            animation: walkBob 0.4s infinite ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const API_URL = 'http://127.0.0.1:8000/api/v1';
+        const api = axios.create({ baseURL: API_URL });
+        api.interceptors.request.use((config) => {
+            const token = localStorage.getItem('token');
+            if (token) config.headers.Authorization = `Bearer ${token}`;
+            return config;
+        });
+
+        const RARITY_MAP = {
+            'Обычный': { img: 1, class: 'common' },
+            'Необычный': { img: 2, class: 'uncommon' },
+            'Редкий': { img: 3, class: 'rare' },
+            'Эпический': { img: 4, class: 'epic' },
+            'Легендарный': { img: 5, class: 'legendary' },
+            'Мифический': { img: 6, class: 'mythical' },
+            'Древний': { img: 7, class: 'ancient' },
+            'Космический': { img: 8, class: 'cosmic' },
+            'Божественный': { img: 9, class: 'divine' },
+            'Сезонный': { img: 10, class: 'seasonal' }
+        };
+
+        const getSheepImg = (rarity) => `img/sheeps/sheep${RARITY_MAP[rarity]?.img || 1}.png`;
+        const getRarityClass = (rarity) => RARITY_MAP[rarity]?.class || 'common';
+
+        function App() {
+            const [token, setToken] = useState(localStorage.getItem('token'));
+            if (!token) return <AuthScreen onLogin={(t) => { localStorage.setItem('token', t); setToken(t); }} />;
+            return <GameScreen onLogout={() => { localStorage.removeItem('token'); setToken(null); }} />;
+        }
+
+        function AuthScreen({ onLogin }) {
+            const [isLogin, setIsLogin] = useState(true);
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setError('');
+                try {
+                    if (isLogin) {
+                        const fd = new URLSearchParams(); fd.append('username', username); fd.append('password', password);
+                        const res = await api.post('/auth/login', fd);
+                        onLogin(res.data.access_token);
+                    } else {
+                        await api.post('/auth/register', { username, password });
+                        const fd = new URLSearchParams(); fd.append('username', username); fd.append('password', password);
+                        const res = await api.post('/auth/login', fd);
+                        onLogin(res.data.access_token);
+                    }
+                } catch (err) { setError(err.response?.data?.detail || 'Ошибка подключения'); }
+            };
+
+            return (
+                <div className="h-screen flex items-center justify-center">
+                    <div className="glass-panel p-10 rounded-3xl w-[400px] shadow-glass animate-pop-in relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent"></div>
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-black text-white flex items-center justify-center gap-3 drop-shadow-glow-green">
+                                <i className="fa-solid fa-sheep text-primary"></i> SheepTrade
+                            </h1>
+                            <p className="text-textMuted mt-2 font-medium">Добро пожаловать на рынок</p>
+                        </div>
+                        {error && <div className="bg-danger/20 border border-danger text-danger p-3 rounded-xl mb-4 text-sm font-bold text-center animate-pop-in">{error}</div>}
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                            <div className="relative">
+                                <i className="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-textMuted"></i>
+                                <input type="text" placeholder="Логин" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                            </div>
+                            <div className="relative">
+                                <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-textMuted"></i>
+                                <input type="password" placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                            </div>
+                            <button type="submit" className="bg-gradient-to-r from-primary to-green-500 hover:from-green-500 hover:to-primary text-dark font-black text-lg py-3 rounded-xl transition-all shadow-glow-green mt-2 hover:scale-[1.02]">
+                                {isLogin ? 'ВОЙТИ В ИГРУ' : 'СОЗДАТЬ АККАУНТ'}
+                            </button>
+                        </form>
+                        <div className="text-center mt-6">
+                            <button onClick={() => setIsLogin(!isLogin)} className="text-textMuted hover:text-white text-sm font-bold transition-colors">
+                                {isLogin ? 'Нет аккаунта? Зарегистрируйся' : 'Уже есть аккаунт? Войти'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function GameScreen({ onLogout }) {
+            const [activeTab, setActiveTab] = useState('farm');
+            const [user, setUser] = useState(null);
+            const [history, setHistory] = useState([]);
+            const [showHelp, setShowHelp] = useState(false);
+
+            const fetchUser = async () => {
+                try {
+                    const res = await api.get('/auth/me');
+                    setUser(res.data);
+                } catch (e) { if (e.response?.status === 401) onLogout(); }
+            };
+
+            useEffect(() => {
+                fetchUser();
+                const ws = new WebSocket('ws://127.0.0.1:8000/api/v1/ws');
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    setHistory(prev => [data, ...prev].slice(0, 12));
+                };
+                return () => ws.close();
+            }, []);
+
+            return (
+                <div className="h-screen flex flex-col relative z-10">
+                    <header className="h-20 glass-panel border-b border-white/5 flex items-center justify-between px-8 shrink-0 z-30">
+                        <div className="flex items-center gap-10">
+                            <div className="text-2xl font-black text-white flex items-center gap-3">
+                                <i className="fa-solid fa-sheep text-primary drop-shadow-glow-green"></i> SheepTrade
+                            </div>
+                            <nav className="flex bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                <button onClick={() => setActiveTab('farm')} className={`px-8 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${activeTab === 'farm' ? 'bg-white/10 text-white shadow-sm' : 'text-textMuted hover:text-white'}`}><i className="fa-solid fa-wheat-awn"></i> Ферма</button>
+                                <button onClick={() => setActiveTab('barn')} className={`px-8 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${activeTab === 'barn' ? 'bg-white/10 text-white shadow-sm' : 'text-textMuted hover:text-white'}`}><i className="fa-solid fa-warehouse"></i> Амбар</button>
+                            </nav>
+                        </div>
+                        <div className="flex items-center gap-5">
+                            <button onClick={() => setShowHelp(true)} className="text-textMuted hover:text-white font-bold text-sm transition-colors"><i className="fa-regular fa-circle-question text-lg"></i> Помощь</button>
+                            <div className="bg-black/40 border border-accent/30 px-5 py-2.5 rounded-xl font-black flex items-center gap-3 text-lg shadow-[inset_0_0_10px_rgba(250,204,21,0.1)]">
+                                <i className="fa-solid fa-coins text-accent"></i>
+                                <span>{user?.balance?.toLocaleString('ru-RU') || 0} ₽</span>
+                            </div>
+                            <button onClick={onLogout} className="bg-white/5 border border-white/10 p-3 rounded-xl text-textMuted hover:text-danger hover:bg-danger/10 transition-all"><i className="fa-solid fa-power-off"></i></button>
+                        </div>
+                    </header>
+
+                    <div className="flex-1 flex overflow-hidden">
+                        {activeTab === 'farm' ? <FarmPage user={user} setUser={setUser} history={history} /> : <BarnPage user={user} setUser={setUser} />}
+                    </div>
+
+                    {showHelp && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 animate-pop-in">
+                            <div className="glass-panel p-10 rounded-3xl max-w-lg relative shadow-glass border border-white/10">
+                                <button onClick={() => setShowHelp(false)} className="absolute top-6 right-6 text-textMuted hover:text-danger text-2xl transition-colors"><i className="fa-solid fa-xmark"></i></button>
+                                <h2 className="text-3xl font-black text-white mb-6"><i className="fa-solid fa-circle-info text-accent"></i> Как играть</h2>
+                                <p className="mb-6 text-textMuted text-lg leading-relaxed">Делайте ставки, чтобы выбить овец. Чем выше ставка, тем выше шанс получить топовую овцу!</p>
+                                <ul className="space-y-4 mb-8">
+                                    <li className="flex items-center gap-4 bg-black/20 p-4 rounded-xl border border-white/5"><i className="fa-solid fa-warehouse text-primary text-xl"></i> <span>Оставляйте овец в Амбаре или продавайте их.</span></li>
+                                    <li className="flex items-center gap-4 bg-black/20 p-4 rounded-xl border border-white/5"><i className="fa-solid fa-chart-line text-accent text-xl"></i> <span>Следите за ценой. Она меняется каждый час.</span></li>
+                                    <li className="flex items-center gap-4 bg-black/20 p-4 rounded-xl border border-white/5"><i className="fa-solid fa-robot text-blue-400 text-xl"></i> <span>Включите автоставку для непрерывной игры.</span></li>
+                                </ul>
+                                <button onClick={() => setShowHelp(false)} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl transition-all">Понятно</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function WalkingSheep({ img, zoneWidth, zoneHeight }) {
+            const elRef = useRef(null);
+            const state = useRef({
+                x: Math.random() * (zoneWidth - 50),
+                y: Math.random() * (zoneHeight - 50),
+                targetX: 0, targetY: 0,
+                speed: 0.5 + Math.random() * 0.5,
+                dir: Math.random() > 0.5 ? 1 : -1,
+                isPaused: false, pauseTime: 0,
+                nextPause: Date.now() + 3000 + Math.random() * 5000
+            });
+
+            useEffect(() => {
+                let frameId;
+                const animate = () => {
+                    const s = state.current;
+                    const el = elRef.current;
+                    if (!el) return;
+
+                    if (s.isPaused) {
+                        if (Date.now() > s.pauseTime) {
+                            s.isPaused = false;
+                            s.nextPause = Date.now() + 3000 + Math.random() * 5000;
+                            el.classList.add('sheep-walking');
+                            s.targetX = Math.random() * (zoneWidth - 50);
+                            s.targetY = Math.random() * (zoneHeight - 50);
+                        } else {
+                            frameId = requestAnimationFrame(animate);
+                            return;
+                        }
+                    } else if (Date.now() > s.nextPause) {
+                        s.isPaused = true;
+                        s.pauseTime = Date.now() + 1500 + Math.random() * 2000;
+                        el.classList.remove('sheep-walking');
+                    }
+
+                    const dx = s.targetX - s.x;
+                    const dy = s.targetY - s.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 5) {
+                        s.targetX = Math.random() * (zoneWidth - 50);
+                        s.targetY = Math.random() * (zoneHeight - 50);
+                    } else {
+                        if (dx > 1 && s.dir === -1) { s.dir = 1; el.style.setProperty('--dir', 1); }
+                        else if (dx < -1 && s.dir === 1) { s.dir = -1; el.style.setProperty('--dir', -1); }
+                        
+                        s.x += (dx / dist) * s.speed;
+                        s.y += (dy / dist) * s.speed;
+                        
+                        el.style.left = `${s.x}px`;
+                        el.style.top = `${s.y}px`;
+                    }
+                    frameId = requestAnimationFrame(animate);
+                };
+
+                frameId = requestAnimationFrame(animate);
+                return () => cancelAnimationFrame(frameId);
+            }, [zoneWidth, zoneHeight]);
+
+            return <img ref={elRef} src={img} className="sheep-sprite sheep-walking" style={{ '--dir': 1 }} onError={(e) => e.target.style.display = 'none'} />;
+        }
+
+        function FarmPage({ user, setUser, history }) {
+            const [betAmount, setBetAmount] = useState(500);
+            const [isRolling, setIsRolling] = useState(false);
+            const [autoBet, setAutoBet] = useState(false);
+            const [winData, setWinData] = useState(null);
+            const [farmSheep, setFarmSheep] = useState([]);
+            const [showError, setShowError] = useState(null);
+            const [zoneSize, setZoneSize] = useState({ w: 0, h: 0 });
+            const zoneRef = useRef(null);
+
+            useEffect(() => {
+                api.get('/game/sheep-types').then(res => {
+                    const types = res.data;
+                    const totalChance = types.reduce((sum, s) => sum + s.base_chance, 0);
+                    const newSheep = [];
+                    for (let i = 0; i < 25; i++) {
+                        let rand = Math.random() * totalChance;
+                        let cum = 0;
+                        for (const s of types) {
+                            cum += s.base_chance;
+                            if (rand <= cum) {
+                                newSheep.push({ id: i, img: getSheepImg(s.rarity) });
+                                break;
+                            }
+                        }
+                    }
+                    setFarmSheep(newSheep);
+                });
+            }, []);
+
+            useEffect(() => {
+                const observer = new ResizeObserver((entries) => {
+                    if (entries[0]) setZoneSize({ w: entries[0].contentRect.width, h: entries[0].contentRect.height });
+                });
+                if (zoneRef.current) observer.observe(zoneRef.current);
+                return () => observer.disconnect();
+            }, []);
+
+            const makeBet = async (amount) => {
+                if (isRolling) return;
+                if (amount < 10) return setShowError("Минимальная ставка 10 ₽");
+                if (amount > user.balance) return setShowError("Недостаточно средств!");
+
+                setIsRolling(true);
+                try {
+                    const res = await api.post('/game/bet', { amount });
+                    setTimeout(() => {
+                        setUser(res.data.user);
+                        setWinData(res.data.rolled_sheep);
+                        setIsRolling(false);
+                    }, 1200);
+                } catch (e) {
+                    setShowError(e.response?.data?.detail || 'Ошибка сервера');
+                    setIsRolling(false);
+                    setAutoBet(false);
+                }
+            };
+
+            const handleCloseWin = (action) => {
+                if (action === 'sell') {
+                    api.post(`/game/sell/${winData.inventory_id}`).then(res => {
+                        setUser(prev => ({ ...prev, balance: res.data.new_balance }));
+                    });
+                }
+                setWinData(null);
+                if (autoBet) makeBet(betAmount);
+            };
+
+            return (
+                <div className="flex-1 flex overflow-hidden">
+                    <aside className="w-80 glass-panel border-r border-white/5 flex flex-col z-20 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
+                        <div className="p-5 border-b border-white/5 bg-black/20 flex justify-between items-center text-sm font-bold">
+                            <span className="text-white"><i className="fa-solid fa-tower-broadcast text-primary mr-2"></i> LIVE Лента</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                            {history.map((item, i) => (
+                                <div key={i} className="bg-white/5 p-3 rounded-xl flex items-center gap-3 text-sm border border-white/5 animate-slide-up">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-element to-dark flex items-center justify-center font-black text-white shrink-0 shadow-lg">
+                                        {item.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="text-textMuted truncate text-xs">{item.username}</div>
+                                        <div className="font-bold text-white">{item.amount} ₽</div>
+                                    </div>
+                                    <div className={`font-black rarity-${getRarityClass(item.rarity)}`}>{item.drop_chance}%</div>
+                                </div>
+                            ))}
+                        </div>
+                    </aside>
+
+                    <main className="flex-1 relative flex flex-col bg-black">
+                        <div className="flex-1 relative overflow-hidden flex justify-center items-center">
+                            <div className="relative w-full h-full max-w-6xl max-h-[80vh] flex justify-center items-center">
+                                <img src="img/farm.jpg" className="w-full h-full object-contain pointer-events-none" />
+                                
+                                <div ref={zoneRef} className="absolute top-[30%] left-[32%] w-[36%] h-[45%] overflow-hidden rounded-2xl">
+                                    {zoneSize.w > 0 && farmSheep.map(s => (
+                                        <WalkingSheep key={s.id} img={s.img} zoneWidth={zoneSize.w} zoneHeight={zoneSize.h} />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {isRolling && (
+                                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40">
+                                    <div className="flex flex-col items-center">
+                                        <i className="fa-solid fa-sheep text-7xl text-primary animate-bounce mb-6 drop-shadow-glow-green"></i>
+                                        <div className="text-4xl font-black text-white tracking-widest animate-pulse">КРУТИМ...</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-30">
+                            <div className="glass-panel p-4 rounded-3xl border border-white/10 shadow-glass flex items-center gap-4">
+                                
+                                <button onClick={() => { if (autoBet) { setAutoBet(false); } else { setAutoBet(true); makeBet(betAmount); } }} 
+                                    className={`h-[60px] w-48 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all border-2 
+                                    ${autoBet ? 'bg-danger/20 text-danger border-danger shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' : 'bg-black/50 text-textMuted border-white/10 hover:text-white hover:border-white/30'}`}>
+                                    <i className={`fa-solid ${autoBet ? 'fa-stop' : 'fa-robot'} text-lg`}></i> 
+                                    {autoBet ? 'ОСТАНОВИТЬ' : 'АВТОСТАВКА'}
+                                </button>
+                                
+                                <div className="flex-1 bg-black/50 rounded-2xl border border-white/10 p-1 flex flex-col">
+                                    <div className="flex items-center h-[36px]">
+                                        <button onClick={() => setBetAmount(Math.max(10, betAmount - 100))} className="w-12 h-full text-textMuted hover:text-white font-black text-xl hover:bg-white/10 rounded-l-xl transition-colors">-</button>
+                                        <input type="number" value={betAmount} onChange={e => setBetAmount(Number(e.target.value))} className="flex-1 bg-transparent text-center font-black text-2xl text-white outline-none" />
+                                        <button onClick={() => setBetAmount(betAmount + 100)} className="w-12 h-full text-textMuted hover:text-white font-black text-xl hover:bg-white/10 rounded-r-xl transition-colors">+</button>
+                                    </div>
+                                    <div className="flex gap-1 p-1 border-t border-white/5 mt-1">
+                                        {[100, 500, 1000, 5000].map(v => (
+                                            <button key={v} onClick={() => setBetAmount(betAmount + v)} className="flex-1 text-textMuted text-[11px] font-bold py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors">+{v}</button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button onClick={() => makeBet(betAmount)} disabled={isRolling} className="h-[60px] w-64 bg-gradient-to-r from-primary to-green-400 text-dark font-black text-xl rounded-2xl shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-all transform hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(74,222,128,0.5)] disabled:opacity-50 disabled:transform-none">
+                                    СДЕЛАТЬ СТАВКУ
+                                </button>
+                            </div>
+                        </div>
+                    </main>
+
+                    {winData && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50">
+                            <div className="glass-panel border-2 p-8 rounded-3xl flex flex-col items-center shadow-glass animate-pop-in relative overflow-hidden min-w-[400px]"
+                                 style={{ borderColor: `var(--color-${getRarityClass(winData.rarity)})` }}>
+                                <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-50"></div>
+                                <h2 className="text-2xl font-black text-white mb-6"><i className="fa-solid fa-trophy text-accent drop-shadow-glow-yellow"></i> ТЫ ВЫБИЛ!</h2>
+                                <div className={`w-48 h-48 rounded-full bg-black/40 mb-4 flex items-center justify-center border-4 border-glow-${getRarityClass(winData.rarity)}`}>
+                                    <img src={getSheepImg(winData.rarity)} alt="win" className="h-40 object-contain drop-shadow-2xl animate-bounce" />
+                                </div>
+                                <div className="text-3xl font-black mb-1">{winData.sheep_name}</div>
+                                <div className={`text-sm font-black uppercase tracking-widest mb-6 rarity-${getRarityClass(winData.rarity)}`}>
+                                    {winData.rarity} • Шанс: {winData.drop_chance}%
+                                </div>
+                                <div className="text-4xl font-black text-accent mb-8 drop-shadow-glow-yellow">{winData.current_price.toLocaleString('ru-RU')} ₽</div>
+                                <div className="flex gap-4 w-full">
+                                    <button onClick={() => handleCloseWin('keep')} className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl transition-colors border border-white/10">В Амбар</button>
+                                    <button onClick={() => handleCloseWin('sell')} className="flex-1 bg-gradient-to-r from-accent to-yellow-500 text-dark font-bold py-4 rounded-xl transition-all hover:scale-[1.02] shadow-glow-yellow">Продать</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showError && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+                            <div className="glass-panel border-2 border-danger p-8 rounded-3xl text-center max-w-sm w-full animate-pop-in shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                                <i className="fa-solid fa-triangle-exclamation text-5xl text-danger mb-4"></i>
+                                <h3 className="text-2xl font-black text-white mb-2">Ошибка</h3>
+                                <p className="mb-8 text-textMuted font-medium text-lg">{showError}</p>
+                                <button onClick={() => setShowError(null)} className="w-full bg-danger hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors">Понятно</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function BarnPage({ user, setUser }) {
+            const [inventory, setInventory] = useState([]);
+            const [sort, setSort] = useState('default');
+            const [sellTarget, setSellTarget] = useState(null);
+
+            const fetchInventory = () => {
+                api.get('/game/inventory').then(res => setInventory(res.data));
+            };
+
+            useEffect(() => { fetchInventory(); }, []);
+
+            const handleSell = () => {
+                if (!sellTarget) return;
+                api.post(`/game/sell/${sellTarget.inventory_id}`).then(res => {
+                    setUser(prev => ({ ...prev, balance: res.data.new_balance }));
+                    setSellTarget(null);
+                    fetchInventory();
+                });
+            };
+
+            const sorted = [...inventory].sort((a, b) => {
+                if (sort === 'asc') return a.current_price - b.current_price;
+                if (sort === 'desc') return b.current_price - a.current_price;
+                return 0;
+            });
+
+            return (
+                <div className="flex-1 p-10 overflow-y-auto relative z-10">
+                    <div className="flex justify-between items-center mb-10 max-w-7xl mx-auto">
+                        <div>
+                            <h1 className="text-4xl font-black text-white"><i className="fa-solid fa-warehouse text-primary mr-3 drop-shadow-glow-green"></i> Мой Амбар</h1>
+                            <p className="text-textMuted font-medium mt-1">Управляй своей коллекцией овец</p>
+                        </div>
+                        <div className="flex items-center gap-6 glass-panel px-6 py-3 rounded-2xl">
+                            <select value={sort} onChange={e => setSort(e.target.value)} className="bg-transparent text-white font-bold outline-none cursor-pointer">
+                                <option value="default" className="bg-dark">По умолчанию</option>
+                                <option value="asc" className="bg-dark">Цена: по возрастанию</option>
+                                <option value="desc" className="bg-dark">Цена: по убыванию</option>
+                            </select>
+                            <div className="w-px h-6 bg-white/20"></div>
+                            <div className="font-black text-lg text-accent"><i className="fa-solid fa-sheep mr-2"></i> {inventory.length}</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
+                        {sorted.map(item => {
+                            const isUp = item.current_price > item.purchase_price;
+                            const rarityClass = getRarityClass(item.rarity);
+                            
+                            return (
+                                <div key={item.inventory_id} className={`glass-panel rounded-2xl overflow-hidden hover:-translate-y-2 transition-all duration-300 group border border-white/5 border-glow-${rarityClass}`}>
+                                    <div className="aspect-square bg-black/40 p-6 flex items-center justify-center relative">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        <img src={getSheepImg(item.rarity)} alt={item.sheep_name} className="w-full h-full object-contain group-hover:scale-110 transition-transform drop-shadow-2xl" onError={e => e.target.style.display='none'} />
+                                    </div>
+                                    <div className="p-5 flex flex-col gap-2 relative bg-gradient-to-b from-transparent to-black/20">
+                                        <div className="font-black text-lg text-white truncate">{item.sheep_name}</div>
+                                        <div className={`text-xs font-black uppercase tracking-widest rarity-${rarityClass}`}>{item.rarity}</div>
+                                        
+                                        <div className="bg-black/40 p-3 rounded-xl mt-3 border border-white/5">
+                                            <div className="text-xl font-black text-white">{item.current_price.toLocaleString('ru-RU')} ₽</div>
+                                            <div className={`text-xs font-bold flex items-center gap-1.5 mt-1 ${isUp ? 'text-primary' : 'text-danger'}`}>
+                                                <i className={`fa-solid ${isUp ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}`}></i>
+                                                <span className="text-textMuted line-through">{item.purchase_price.toLocaleString('ru-RU')} ₽</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <button onClick={() => setSellTarget(item)} className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold py-2.5 rounded-xl mt-3 transition-colors">Продать</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {sellTarget && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-pop-in">
+                            <div className="glass-panel border-2 border-danger p-8 rounded-3xl text-center max-w-sm w-full shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                                <i className="fa-solid fa-triangle-exclamation text-5xl text-danger mb-4"></i>
+                                <h3 className="text-2xl font-black text-white mb-4">Подтверждение</h3>
+                                <p className="mb-8 text-textMuted font-medium text-lg">Вы хотите продать <br/><strong className="text-white">{sellTarget.sheep_name}</strong> за <br/><strong className="text-accent text-2xl">{sellTarget.current_price.toLocaleString('ru-RU')} ₽</strong>?</p>
+                                <div className="flex gap-4">
+                                    <button onClick={() => setSellTarget(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold transition-colors">Отмена</button>
+                                    <button onClick={handleSell} className="flex-1 bg-danger hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg">Продать</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
